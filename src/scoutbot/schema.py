@@ -1,0 +1,13 @@
+from pydantic import BaseModel
+from typing import Literal
+
+
+class TriageResult(BaseModel):
+
+    priority: str | Literal["low", "medium", "high"]
+    category: Literal["billing", "technical", "account", "other"]
+
+
+# if __name__ == "__main__":
+#     result = TriageResult(priority="high", category="technical")
+#     print(result.model_dump_json())
