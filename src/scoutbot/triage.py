@@ -1,4 +1,4 @@
-from schema import TriageResult
+from scoutbot.schema import TriageResult
 
 def triage_ticket(ticket: str) -> TriageResult:
     """
