@@ -1,5 +1,6 @@
 import json
 from importlib.resources import files
+from scoutbot.triage import triage_ticket
 
 TICKET_PATH = "data/sample_tickets.json"
 def load_tickets(package: str, ticket_path: str) -> list[dict]:
@@ -13,6 +14,8 @@ def main() -> None:
     for ticket in tickets:
         print("Ticket ID:", ticket['id'])
         print("Ticket Text:", ticket['text'])
+        result = triage_ticket(ticket['text'])
+        print("Triage Result:", result.model_dump_json())
 
 if __name__ == "__main__":
     main()
