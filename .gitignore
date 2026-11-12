@@ -221,3 +221,6 @@ __marimo__/
 # silently exclude these; they're intentional sample input files the exercises read, not
 # runtime logs.
 !sample_app.log
+
+# Visual Studio Code specific files and directories
+.vscode/
