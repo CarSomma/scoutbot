@@ -6,8 +6,8 @@ class LLMsSettings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore"
-        extra="ignore"
     )
     anthropic_api_key: SecretStr = SecretStr("ANTROPIC_API_KEY")
     anthropic_model: str = "claude-haiku-4-5"
+
 llms_settings = LLMsSettings()
