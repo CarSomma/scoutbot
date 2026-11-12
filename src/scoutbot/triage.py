@@ -12,7 +12,7 @@ def triage_ticket(ticket: str) -> TriageResult:
     )   
 
 
-if __name__ == "__main__":
-    ticket = "Example support ticket"
-    result = triage_ticket(ticket)
-    print(result.model_dump_json())
+# if __name__ == "__main__":
+#     ticket = "Example support ticket"
+#     result = triage_ticket(ticket)
+#     print(result.model_dump_json())
