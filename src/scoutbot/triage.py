@@ -19,22 +19,31 @@ from typing import Any
 #client = Anthropic(middleware=[logging_middleware])
 client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())#, middleware=[logging_middleware])
 
-def triage_ticket(ticket: str) -> TriageResult:
+triage_tool = {
+    "name": "support_ticket_triage",
+    "description": "Triages support tickets and suggests the appropriate owner, priority, and category.",
+    "strict" : True,
+    "input_schema": TriageResult.model_json_schema()
+}
+
+def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) :
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
     """
 
-    response = client.messages.parse(
+    response = client.messages.create(
         model=llms_settings.anthropic_model,
         max_tokens=1024,
         messages = [{ "role": "user",
                 "content": f"""You are a support ticket triage assistant.
                   Triage the following ticket: {ticket}"""}
         ],
-        output_format=TriageResult
+        tools=[triage_tool],
+        tool_choice={"type":"auto"}
+
     )
     # Placeholder logic for triaging
-    return response.parsed_output
+    return response.content[0]
 
 
 # if __name__ == "__main__":
