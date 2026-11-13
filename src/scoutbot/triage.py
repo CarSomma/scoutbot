@@ -1,8 +1,23 @@
 from scoutbot.schema import TriageResult
 from scoutbot.config import llms_settings
-from anthropic import Anthropic
+from anthropic import Anthropic, APIRequest, APIResponse, CallNext
+from typing import Any
 
-client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())
+# def logging_middleware(request: APIRequest, call_next: CallNext) -> APIResponse[Any]:
+#     # Before the request
+#     print(f"-> {request.method} {request.url}")
+
+#     # Forward the request to the rest of the chain
+#     response = call_next(request)
+
+#     # After the request
+#     print(f"<- {response.status_code}")
+
+#     return response
+
+
+#client = Anthropic(middleware=[logging_middleware])
+client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())#, middleware=[logging_middleware])
 
 def triage_ticket(ticket: str) -> TriageResult:
     """
