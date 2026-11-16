@@ -1,7 +1,7 @@
 import json
 from importlib.resources import files
-from scoutbot.triage import triage_ticket, client, triage_tool
 
+from scoutbot.triage import client, triage_ticket, triage_tool
 
 TICKET_PATH = "data/sample_tickets.json"
 
