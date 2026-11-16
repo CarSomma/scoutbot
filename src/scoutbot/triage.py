@@ -38,7 +38,7 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageRe
         if block.type == "tool_use":
             print(f"DEBUG block[{i}] input:", block.input)
             return TriageResult.model_validate(block.input)
-    #print("DEBUG returning content[0] of type:", type(response.content[0]).__name__)
+
 
     # Placeholder logic for triaging
     raise ValueError(f"Model did not call the tool (stop_reason={response.stop_reason})")
