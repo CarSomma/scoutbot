@@ -1,9 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Literal
 
 
 class TriageResult(BaseModel):
     "Represents the result of triaging a support ticket."
+
+    model_config = ConfigDict(extra="forbid")  # adds additionalProperties: false (required by strict tools)
 
     priority: Literal["low", "medium", "high"]
     category: Literal["billing", "technical", "account", "other"]
