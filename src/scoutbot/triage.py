@@ -3,20 +3,7 @@ from scoutbot.config import llms_settings
 from anthropic import Anthropic, APIRequest, APIResponse, CallNext
 from typing import Any
 
-# def logging_middleware(request: APIRequest, call_next: CallNext) -> APIResponse[Any]:
-#     # Before the request
-#     print(f"-> {request.method} {request.url}")
 
-#     # Forward the request to the rest of the chain
-#     response = call_next(request)
-
-#     # After the request
-#     print(f"<- {response.status_code}")
-
-#     return response
-
-
-#client = Anthropic(middleware=[logging_middleware])
 client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())#, middleware=[logging_middleware])
 
 triage_tool = {
@@ -26,7 +13,7 @@ triage_tool = {
     "input_schema": TriageResult.model_json_schema()
 }
 
-def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) :
+def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
     """
@@ -42,11 +29,22 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) :
         tool_choice={"type":"auto"}
 
     )
+    # DEBUG: inspect what the API actually returned
+    #print("DEBUG response object:", response)
+    #print("DEBUG stop_reason:", response.stop_reason)
+    #print("DEBUG number of content blocks:", len(response.content))
+    for i, block in enumerate(response.content):
+        print(f"DEBUG block[{i}] type:", block.type)
+        if block.type == "tool_use":
+            print(f"DEBUG block[{i}] input:", block.input)
+            return TriageResult.model_validate(block.input)
+    #print("DEBUG returning content[0] of type:", type(response.content[0]).__name__)
+
     # Placeholder logic for triaging
-    return response.content[0]
+    raise ValueError(f"Model did not call the tool (stop_reason={response.stop_reason})")
 
 
-# if __name__ == "__main__":
-#     ticket = "Example support ticket"
-#     result = triage_ticket(ticket)
-#     print(result.model_dump_json())
+if __name__ == "__main__":
+    ticket = "I was charged twice, please refund"
+    result = triage_ticket(ticket,client,triage_tool)
+    print(result.model_dump_json())
