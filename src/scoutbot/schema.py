@@ -5,11 +5,16 @@ from typing import Literal
 class TriageResult(BaseModel):
     "Represents the result of triaging a support ticket."
 
-    model_config = ConfigDict(extra="forbid")  # adds additionalProperties: false (required by strict tools)
+    model_config = ConfigDict(
+        extra="forbid"
+    )  # adds additionalProperties: false (required by strict tools)
 
     priority: Literal["low", "medium", "high"]
     category: Literal["billing", "technical", "account", "other"]
-    suggested_owner: Literal["billing_team", "engineering_support", "account_management", "general_support"]
+    suggested_owner: Literal[
+        "billing_team", "engineering_support", "account_management", "general_support"
+    ]
+
 
 # if __name__ == "__main__":
 #     result = TriageResult(priority="high", category="technical", suggested_owner="engineering_support")
