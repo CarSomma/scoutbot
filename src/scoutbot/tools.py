@@ -22,8 +22,11 @@ def lookup_customer(customer_id: str) -> Customer:
     """Looks up a customer by ID and returns their plan,
     account age in days, and number of refunds in the last 90 days."""
 
-    customers = load_customers("data/customers.json", "scoutbot")
+    customers = load_customers("data/mock_customers.json", "scoutbot")
     record = customers.get(customer_id)
     if not record:
         raise LookupError(f"Customer with ID {customer_id} not found.")
     return Customer.model_validate(record)
+
+
+TOOLS = [LOOKUP_CUSTOMER_TOOL, TRIAGE_TOOL]
