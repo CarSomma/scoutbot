@@ -2,17 +2,13 @@ from anthropic import Anthropic
 
 from scoutbot.config import llms_settings
 from scoutbot.schema import TriageResult
+from scoutbot.tools import TRIAGE_TOOL
 
 client = Anthropic(
     api_key=llms_settings.anthropic_api_key.get_secret_value()
 )  
 
-triage_tool = {
-    "name": "support_ticket_triage",
-    "description": "Triages support tickets and suggests the appropriate owner, priority, and category.",
-    "strict": True,
-    "input_schema": TriageResult.model_json_schema(),
-}
+
 
 
 def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageResult:
@@ -36,7 +32,6 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageRe
     for i, block in enumerate(response.content):
         print(f"DEBUG block[{i}] type:", block.type)
         if block.type == "tool_use":
-            print(f"DEBUG block[{i}] input:", block.input)
             return TriageResult.model_validate(block.input)
 
     # Placeholder logic for triaging
@@ -47,5 +42,5 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageRe
 
 if __name__ == "__main__":
     ticket = "I was charged twice, please refund"
-    result = triage_ticket(ticket, client, triage_tool)
+    result = triage_ticket(ticket, client, TRIAGE_TOOL)
     print(result.model_dump_json())
