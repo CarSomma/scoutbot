@@ -1,4 +1,6 @@
-from scoutbot.tools import TRIAGE_TOOL
+import logging
+
+from scoutbot.tools import TOOLS
 from scoutbot.triage import client, triage_ticket
 from scoutbot.utils import load_tickets
 
@@ -11,9 +13,14 @@ def main() -> None:
     for ticket in tickets:
         print("Ticket ID:", ticket["id"])
         print("Ticket Text:", ticket["text"])
-        result = triage_ticket(ticket["text"], client, TRIAGE_TOOL)
+        result = triage_ticket(
+            ticket["text"], client, TOOLS, customer_id=ticket["customer_id"]
+        )
         print("Triage Result:", result.model_dump_json())
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     main()
