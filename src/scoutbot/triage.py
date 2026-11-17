@@ -5,7 +5,7 @@ from scoutbot.schema import TriageResult
 
 client = Anthropic(
     api_key=llms_settings.anthropic_api_key.get_secret_value()
-)  # , middleware=[logging_middleware])
+)  
 
 triage_tool = {
     "name": "support_ticket_triage",
@@ -33,10 +33,6 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageRe
         tools=[triage_tool],
         tool_choice={"type": "auto"},
     )
-    # DEBUG: inspect what the API actually returned
-    # print("DEBUG response object:", response)
-    # print("DEBUG stop_reason:", response.stop_reason)
-    # print("DEBUG number of content blocks:", len(response.content))
     for i, block in enumerate(response.content):
         print(f"DEBUG block[{i}] type:", block.type)
         if block.type == "tool_use":
