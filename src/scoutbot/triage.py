@@ -4,11 +4,7 @@ from scoutbot.config import llms_settings
 from scoutbot.schema import TriageResult
 from scoutbot.tools import TRIAGE_TOOL
 
-client = Anthropic(
-    api_key=llms_settings.anthropic_api_key.get_secret_value()
-)  
-
-
+client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())
 
 
 def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageResult:
@@ -34,7 +30,6 @@ def triage_ticket(ticket: str, client: Anthropic, triage_tool: dict) -> TriageRe
         if block.type == "tool_use":
             return TriageResult.model_validate(block.input)
 
-    # Placeholder logic for triaging
     raise ValueError(
         f"Model did not call the tool (stop_reason={response.stop_reason})"
     )
