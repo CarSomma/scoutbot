@@ -8,6 +8,10 @@ TICKET_PATH = "data/sample_tickets.json"
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
+    logging.getLogger("httpx2").setLevel(logging.WARNING)
     print("Loading tickets from:", TICKET_PATH)
     tickets = load_tickets(TICKET_PATH, "scoutbot")
     for ticket in tickets:
@@ -20,7 +24,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
     main()
