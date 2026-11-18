@@ -27,6 +27,14 @@ class LookupCustomerInput(BaseModel):
     customer_id: str
 
 
+class EscalateInput(BaseModel):
+    "What the model sends when it wants a human to take over the ticket."
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str
+
+
 class Customer(BaseModel):
     "What lookup_customer() returns: data from your database."
 
