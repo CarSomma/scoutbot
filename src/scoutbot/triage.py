@@ -20,6 +20,7 @@ Look up the customer first, then call support_ticket_triage with your decision.
 If the ticket needs a human (e.g. legal threats, safety issues, or you cannot
 triage it confidently), call escalate_to_human with a reason. A human must approve
 it; if they reject it, keep going.
+If the ticket could be caused by a payment provider outage, check https://status.mollie.com/api/v2/components.json.
 Always finish by calling support_ticket_triage. Never ask questions."""
 
 
@@ -64,10 +65,17 @@ def triage_ticket(
         )
         messages.append({"role": "assistant", "content": response.content})
 
+        if response.stop_reason == "pause_turn":
+            continue  # API paused mid server-tool work; resend so it resumes
+
         tool_result = []
         for block in response.content:
             if block.type == "text":
                 logger.debug("Model text: %s", block.text)
+            if block.type == "server_tool_use":
+                logger.info("Server tool call : %s(%s)", block.name, block.input)
+            if block.type == "web_fetch_tool_result":
+                logger.info("Web fetch result received")
             if block.type != "tool_use":
                 continue
             logger.info("Tool call: %s(%s)", block.name, block.input)
