@@ -69,7 +69,8 @@ WEB_FETCH_TOOL = {
     "type": "web_fetch_20260209", # version that does dynamic filtering
     "name": "web_fetch", 
     "max_uses": 5,
-    "allowed_domains": ["status.mollie.com"]
+    "allowed_domains": ["status.mollie.com"],
+    "allowed_callers": ["direct"]
 }
 
 
