@@ -1,10 +1,11 @@
 import logging
+from collections.abc import Callable
 
 from anthropic import Anthropic
 
 from scoutbot.config import llms_settings
 from scoutbot.schema import TriageResult
-from scoutbot.tools import TOOLS, lookup_customer
+from scoutbot.tools import TOOLS, ask_human_approval, escalate_to_human, lookup_customer
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,9 @@ Customer ID: {customer_id}
 Ticket: {ticket}
 
 Look up the customer first, then call support_ticket_triage with your decision.
+If the ticket needs a human (e.g. legal threats, safety issues, or you cannot
+triage it confidently), call escalate_to_human with a reason. A human must approve
+it; if they reject it, keep going.
 Always finish by calling support_ticket_triage. Never ask questions."""
 
 
@@ -25,9 +29,13 @@ def triage_ticket(
     tools: list[dict],
     customer_id: str,
     max_turns: int = 5,
+    approve: Callable[[str], bool] = ask_human_approval,
 ) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
+
+    `approve` is asked before any escalate_to_human call takes effect; it gets the
+    model's reason and returns True to approve, False to reject.
     """
     messages = [
         {
@@ -88,6 +96,22 @@ def triage_ticket(
                             "is_error": True,
                         }
                     )
+            elif block.name == "escalate_to_human":
+                reason = block.input["reason"]
+                # Gate: the escalation does not happen unless a human says yes.
+                if approve(reason):
+                    logger.info("Escalation approved by human")
+                    content = escalate_to_human(reason)
+                else:
+                    logger.info("Escalation rejected by human")
+                    content = (
+                        "A human reviewed this escalation and rejected it. The ticket "
+                        "was NOT escalated. Continue triaging it yourself."
+                    )
+                # Rejection is a normal observation, not an error: the loop goes on.
+                tool_result.append(
+                    {"type": "tool_result", "tool_use_id": block.id, "content": content}
+                )
             else:
                 logger.warning("Model called unknown tool: %s", block.name)
                 tool_result.append(
