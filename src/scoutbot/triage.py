@@ -1,15 +1,13 @@
 import logging
-from collections.abc import Callable
+from typing import Callable
 
 from anthropic import Anthropic
-
-from scoutbot.config import llms_settings
 from scoutbot.schema import TriageResult
-from scoutbot.tools import TOOLS, ask_human_approval, escalate_to_human, lookup_customer
+from scoutbot.tools import ask_human_approval, escalate_to_human, lookup_customer
 
 logger = logging.getLogger(__name__)
 
-client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())
+
 
 PROMPT_TEMPLATE = """You are a support ticket triage assistant.
 
@@ -27,6 +25,7 @@ Always finish by calling support_ticket_triage. Never ask questions."""
 def triage_ticket(
     ticket: str,
     client: Anthropic,
+    model: str,
     tools: list[dict],
     customer_id: str,
     max_turns: int = 5,
@@ -49,7 +48,7 @@ def triage_ticket(
 
     for turn in range(1, max_turns + 1):
         response = client.messages.create(
-            model=llms_settings.anthropic_model,
+            model=model,
             max_tokens=1024,
             messages=messages,
             tools=tools,
@@ -139,10 +138,10 @@ def triage_ticket(
     raise ValueError("Exceeded maximum number of turns without triaging")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-    ticket = "I was charged twice, please refund"
-    result = triage_ticket(ticket, client, TOOLS, customer_id="1001")
-    print(result.model_dump_json())
+# if __name__ == "__main__":
+#     logging.basicConfig(
+#         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+#     )
+#     ticket = "I was charged twice, please refund"
+#     result = triage_ticket(ticket, client, TOOLS, customer_id="1001")
+#     print(result.model_dump_json())
