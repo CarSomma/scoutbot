@@ -8,6 +8,3 @@ class LLMsSettings(BaseSettings):
     )
     anthropic_api_key: SecretStr
     anthropic_model: str = "claude-haiku-4-5"
-
-
-llms_settings = LLMsSettings()
