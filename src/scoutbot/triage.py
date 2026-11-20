@@ -1,6 +1,5 @@
 import logging
 
-from pydantic import BaseModel
 from scoutbot.interfaces import LLMClient
 from scoutbot.schema import TriageResult
 from scoutbot.tools import ToolHandlers, make_tool_result
@@ -57,13 +56,12 @@ def triage_ticket(
                 )
                 continue
             try:
-                output = handler(**block.input)
+                content = handler(**block.input)
             except LookupError as e:
                 logger.warning("Tool error (%s): %s", block.name, e)
                 tool_result.append(make_tool_result(block.id, str(e), is_error=True))
                 continue
-            logger.info("Tool result: %s", output)
-            content = output.model_dump_json() if isinstance(output, BaseModel) else str(output)
+            logger.info("Tool result: %s", content)
             tool_result.append(make_tool_result(block.id, content))
         if not tool_result:
             raise ValueError(
