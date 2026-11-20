@@ -2,24 +2,18 @@ import logging
 from typing import Callable
 
 from anthropic import Anthropic
+from pydantic import BaseModel
 from scoutbot.schema import TriageResult
-from scoutbot.tools import ask_human_approval, escalate_to_human, lookup_customer
+from scoutbot.tools import TOOL_HANDLERS, ask_human_approval, make_tool_result
+from scoutbot.prompts import build_prompt
+from scoutbot.utils import log_block
 
 logger = logging.getLogger(__name__)
 
-
-
-PROMPT_TEMPLATE = """You are a support ticket triage assistant.
-
-Customer ID: {customer_id}
-Ticket: {ticket}
-
-Look up the customer first, then call support_ticket_triage with your decision.
-If the ticket needs a human (e.g. legal threats, safety issues, or you cannot
-triage it confidently), call escalate_to_human with a reason. A human must approve
-it; if they reject it, keep going.
-If the ticket could be caused by a payment provider outage, check https://status.mollie.com/api/v2/components.json.
-Always finish by calling support_ticket_triage. Never ask questions."""
+ESCALATION_REJECTED_MSG = (
+    "A human reviewed this escalation and rejected it. The ticket "
+    "was NOT escalated. Continue triaging it yourself."
+)
 
 
 def triage_ticket(
@@ -40,7 +34,7 @@ def triage_ticket(
     messages = [
         {
             "role": "user",
-            "content": PROMPT_TEMPLATE.format(customer_id=customer_id, ticket=ticket),
+            "content": build_prompt(customer_id=customer_id, ticket=ticket),
         }
     ]
 
@@ -69,12 +63,7 @@ def triage_ticket(
 
         tool_result = []
         for block in response.content:
-            if block.type == "text":
-                logger.debug("Model text: %s", block.text)
-            if block.type == "server_tool_use":
-                logger.info("Server tool call : %s(%s)", block.name, block.input)
-            if block.type == "web_fetch_tool_result":
-                logger.info("Web fetch result received")
+            log_block(block)
             if block.type != "tool_use":
                 continue
             logger.info("Tool call: %s(%s)", block.name, block.input)
@@ -82,53 +71,28 @@ def triage_ticket(
                 result = TriageResult.model_validate(block.input)
                 logger.info("Triage done after %d turn(s): %s", turn, result)
                 return result
-            if block.name == "lookup_customer":
-                try:
-                    customer = lookup_customer(block.input["customer_id"])
-                    logger.info("Tool result: %s", customer)
-                    tool_result.append(
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": customer.model_dump_json(),
-                        }
-                    )
-                except LookupError as e:
-                    logger.warning("Tool error (lookup_customer): %s", e)
-                    tool_result.append(
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": str(e),
-                            "is_error": True,
-                        }
-                    )
-            elif block.name == "escalate_to_human":
-                reason = block.input["reason"]
-                # Gate: the escalation does not happen unless a human says yes.
-                if approve(reason):
-                    logger.info("Escalation approved by human")
-                    content = escalate_to_human(reason)
-                else:
-                    logger.info("Escalation rejected by human")
-                    content = (
-                        "A human reviewed this escalation and rejected it. The ticket "
-                        "was NOT escalated. Continue triaging it yourself."
-                    )
-                # Rejection is a normal observation, not an error: the loop goes on.
-                tool_result.append(
-                    {"type": "tool_result", "tool_use_id": block.id, "content": content}
-                )
-            else:
+            handler = TOOL_HANDLERS.get(block.name)
+            if handler is None:
                 logger.warning("Model called unknown tool: %s", block.name)
                 tool_result.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": f"Unknown tool: {block.name}",
-                        "is_error": True,
-                    }
+                    make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
                 )
+                continue
+            # Gate: the escalation does not happen unless a human says yes.
+            # Rejection is a normal observation, not an error: the loop goes on.
+            if block.name == "escalate_to_human" and not approve(block.input["reason"]):
+                logger.info("Escalation rejected by human")
+                tool_result.append(make_tool_result(block.id, ESCALATION_REJECTED_MSG))
+                continue
+            try:
+                output = handler(**block.input)
+            except LookupError as e:
+                logger.warning("Tool error (%s): %s", block.name, e)
+                tool_result.append(make_tool_result(block.id, str(e), is_error=True))
+                continue
+            logger.info("Tool result: %s", output)
+            content = output.model_dump_json() if isinstance(output, BaseModel) else str(output)
+            tool_result.append(make_tool_result(block.id, content))
         if not tool_result:
             raise ValueError(
                 f"Model stopped without triaging (stop_reason={response.stop_reason})"
