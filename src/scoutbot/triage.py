@@ -1,19 +1,13 @@
 import logging
-from typing import Callable
 
 from anthropic import Anthropic
 from pydantic import BaseModel
 from scoutbot.schema import TriageResult
-from scoutbot.tools import ToolHandlers, ask_human_approval, make_tool_result
+from scoutbot.tools import ToolHandlers, make_tool_result
 from scoutbot.prompts import build_prompt
 from scoutbot.utils import log_block
 
 logger = logging.getLogger(__name__)
-
-ESCALATION_REJECTED_MSG = (
-    "A human reviewed this escalation and rejected it. The ticket "
-    "was NOT escalated. Continue triaging it yourself."
-)
 
 
 def triage_ticket(
@@ -24,14 +18,11 @@ def triage_ticket(
     handlers: ToolHandlers,
     customer_id: str,
     max_turns: int = 5,
-    approve: Callable[[str], bool] = ask_human_approval,
 ) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
 
     `handlers` maps each client tool name to the function that runs it.
-    `approve` is asked before any escalate_to_human call takes effect; it gets the
-    model's reason and returns True to approve, False to reject.
     """
     messages = [
         {
@@ -79,12 +70,6 @@ def triage_ticket(
                 tool_result.append(
                     make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
                 )
-                continue
-            # Gate: the escalation does not happen unless a human says yes.
-            # Rejection is a normal observation, not an error: the loop goes on.
-            if block.name == "escalate_to_human" and not approve(block.input["reason"]):
-                logger.info("Escalation rejected by human")
-                tool_result.append(make_tool_result(block.id, ESCALATION_REJECTED_MSG))
                 continue
             try:
                 output = handler(**block.input)
