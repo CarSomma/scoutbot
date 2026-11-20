@@ -1,10 +1,11 @@
 """Data access: where customer records come from."""
 
+from scoutbot.interfaces import CustomerRepository
 from scoutbot.schema import Customer
 from scoutbot.utils import load_customers
 
 
-class JsonCustomerRepository:
+class JsonCustomerRepository(CustomerRepository):
     """Customers stored in a JSON file inside a package. Loaded once, on creation."""
 
     def __init__(self, path: str, package: str = "scoutbot"):
