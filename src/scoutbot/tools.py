@@ -55,6 +55,16 @@ WEB_FETCH_TOOL = {
 
 
 # --- Tool functions (what runs when the model calls a tool) -------------------
+# Every handler returns a str: that is what gets sent back to the model.
+
+def make_lookup_handler(customers: CustomerRepository) -> Callable[..., str]:
+    """Wrap customers.lookup so the tool returns the customer as JSON text."""
+
+    def lookup_customer(customer_id: str) -> str:
+        return customers.lookup(customer_id).model_dump_json()
+
+    return lookup_customer
+
 
 def escalate_to_human(reason: str) -> str:
     """Perform the escalation. Only call this after a human has approved it."""
@@ -86,7 +96,7 @@ def make_escalate_handler(approve: Callable[[str], bool]) -> Callable[..., str]:
 
 TOOLS = [LOOKUP_CUSTOMER_TOOL, ESCALATE_TOOL, WEB_FETCH_TOOL, TRIAGE_TOOL]
 
-ToolHandlers = dict[str, Callable[..., object]]
+ToolHandlers = dict[str, Callable[..., str]]
 
 
 def make_tool_handlers(
@@ -98,7 +108,7 @@ def make_tool_handlers(
     `approve` is asked before any escalation takes effect.
     """
     return {
-        LOOKUP_CUSTOMER_TOOL["name"]: customers.lookup,
+        LOOKUP_CUSTOMER_TOOL["name"]: make_lookup_handler(customers),
         ESCALATE_TOOL["name"]: make_escalate_handler(approve),
     }
 
