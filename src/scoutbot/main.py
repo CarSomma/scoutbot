@@ -1,6 +1,7 @@
 import logging
 from scoutbot.config import LLMsSettings
 from scoutbot.llm_client import AnthropicClient
+from scoutbot.prompts import build_prompt
 from scoutbot.repository import JsonCustomerRepository
 from scoutbot.approval import ask_human_approval
 from scoutbot.tools import TOOLS, make_tool_handlers
@@ -28,13 +29,8 @@ def main() -> None:
     for ticket in tickets:
         print("Ticket ID:", ticket["id"])
         print("Ticket Text:", ticket["text"])
-        result = triage_ticket(
-            ticket["text"],
-            client,
-            TOOLS,
-            handlers,
-            customer_id=ticket["customer_id"],
-        )
+        prompt = build_prompt(customer_id=ticket["customer_id"], ticket=ticket["text"])
+        result = triage_ticket(prompt, client, TOOLS, handlers)
         print("Triage Result:", result.model_dump_json())
 
 
