@@ -1,7 +1,6 @@
 import logging
 from scoutbot.interfaces import LLMClient, ToolHandlers
 from scoutbot.schema import TriageResult
-from scoutbot.utils import log_block
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +48,7 @@ def triage_ticket(
 
     for turn in range(1, max_turns + 1):
         response = client.send(messages, tools)
-        logger.info(
-            "Turn %d/%d: stop_reason=%s, tokens in=%d out=%d",
-            turn,
-            max_turns,
-            response.stop_reason,
-            response.usage.input_tokens,
-            response.usage.output_tokens,
-        )
+        logger.info("Turn %d/%d done", turn, max_turns)
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason == "pause_turn":
@@ -64,7 +56,6 @@ def triage_ticket(
 
         tool_results = []
         for block in response.content:
-            log_block(block)
             if block.type != "tool_use":
                 continue
             logger.info("Tool call: %s(%s)", block.name, block.input)
