@@ -15,6 +15,24 @@ def make_tool_result(tool_use_id: str, content: str, is_error: bool = False) -> 
     return result
 
 
+def run_tool(block, handlers: ToolHandlers) -> dict:
+    """Run the tool the model asked for and return the tool_result block to send back."""
+    handler = handlers.get(block.name)
+    if handler is None:
+        logger.warning("Model called unknown tool: %s", block.name)
+        return make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
+
+    arguments = block.input  # e.g. {"customer_id": "1001"}
+    try:
+        content = handler(**arguments)  # → handler(customer_id="1001")
+    except LookupError as e:
+        logger.warning("Tool error (%s): %s", block.name, e)
+        return make_tool_result(block.id, str(e), is_error=True)
+
+    logger.info("Tool result: %s", content)
+    return make_tool_result(block.id, content)
+
+
 def triage_ticket(
     prompt: str,
     client: LLMClient,
@@ -55,22 +73,7 @@ def triage_ticket(
                 result = TriageResult.model_validate(block.input)
                 logger.info("Triage done after %d turn(s): %s", turn, result)
                 return result
-            handler = handlers.get(block.name)
-            if handler is None:
-                logger.warning("Model called unknown tool: %s", block.name)
-                tool_result.append(
-                    make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
-                )
-                continue
-            arguments = block.input  # e.g. {"customer_id": "1001"}
-            try:
-                content = handler(**arguments)  # → handler(customer_id="1001")
-            except LookupError as e:
-                logger.warning("Tool error (%s): %s", block.name, e)
-                tool_result.append(make_tool_result(block.id, str(e), is_error=True))
-                continue
-            logger.info("Tool result: %s", content)
-            tool_result.append(make_tool_result(block.id, content))
+            tool_result.append(run_tool(block, handlers))
         if not tool_result:
             raise ValueError(
                 f"Model stopped without triaging (stop_reason={response.stop_reason})"
