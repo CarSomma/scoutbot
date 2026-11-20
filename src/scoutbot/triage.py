@@ -1,11 +1,18 @@
 import logging
 
-from scoutbot.interfaces import LLMClient
+from scoutbot.interfaces import LLMClient, ToolHandlers
 from scoutbot.schema import TriageResult
-from scoutbot.tools import ToolHandlers, make_tool_result
 from scoutbot.utils import log_block
 
 logger = logging.getLogger(__name__)
+
+
+def make_tool_result(tool_use_id: str, content: str, is_error: bool = False) -> dict:
+    """Build the tool_result block that answers one tool_use block."""
+    result = {"type": "tool_result", "tool_use_id": tool_use_id, "content": content}
+    if is_error:
+        result["is_error"] = True
+    return result
 
 
 def triage_ticket(
