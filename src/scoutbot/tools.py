@@ -3,7 +3,7 @@
 import logging
 from typing import Callable
 
-from scoutbot.repository import JsonCustomerRepository
+from scoutbot.interfaces import CustomerRepository
 from scoutbot.schema import EscalateInput, LookupCustomerInput, TriageResult
 
 logger = logging.getLogger(__name__)
@@ -82,22 +82,6 @@ def make_escalate_handler(approve: Callable[[str], bool]) -> Callable[..., str]:
     return escalate
 
 
-# --- Human approval -----------------------------------------------------------
-
-def ask_human_approval(reason: str) -> bool:
-    """Ask the operator on the terminal to approve an escalation (y/n).
-
-    Anything other than an explicit yes, including no input at all, is a rejection.
-    """
-    try:
-        answer = input(
-            f"\nModel wants to escalate to a human.\nReason: {reason}\nApprove? [y/N] "
-        )
-    except EOFError:
-        return False
-    return answer.strip().lower() in {"y", "yes"}
-
-
 # --- Registries ---------------------------------------------------------------
 
 TOOLS = [LOOKUP_CUSTOMER_TOOL, ESCALATE_TOOL, WEB_FETCH_TOOL, TRIAGE_TOOL]
@@ -106,7 +90,7 @@ ToolHandlers = dict[str, Callable[..., object]]
 
 
 def make_tool_handlers(
-    customers: JsonCustomerRepository, approve: Callable[[str], bool]
+    customers: CustomerRepository, approve: Callable[[str], bool]
 ) -> ToolHandlers:
     """Tool name -> the Python function that runs it.
 
