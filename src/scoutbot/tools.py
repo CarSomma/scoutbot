@@ -1,6 +1,7 @@
 """Definitions of tools and their corresponding Python functions."""
 
 import logging
+from typing import Callable
 
 from scoutbot.schema import Customer, EscalateInput, LookupCustomerInput, TriageResult
 from scoutbot.utils import load_customers
@@ -75,3 +76,18 @@ WEB_FETCH_TOOL = {
 
 
 TOOLS = [LOOKUP_CUSTOMER_TOOL, ESCALATE_TOOL, WEB_FETCH_TOOL, TRIAGE_TOOL]
+
+# Tool name -> the Python function that runs it.
+# The model's tool input is passed as keyword arguments: handler(**block.input).
+TOOL_HANDLERS: dict[str, Callable[..., object]] = {
+    "lookup_customer": lookup_customer,
+    "escalate_to_human": escalate_to_human,
+}
+
+
+def make_tool_result(tool_use_id: str, content: str, is_error: bool = False) -> dict:
+    """Build the tool_result block that answers one tool_use block."""
+    result = {"type": "tool_result", "tool_use_id": tool_use_id, "content": content}
+    if is_error:
+        result["is_error"] = True
+    return result
