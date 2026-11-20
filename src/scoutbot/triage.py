@@ -1,5 +1,4 @@
 import logging
-
 from scoutbot.interfaces import LLMClient, ToolHandlers
 from scoutbot.schema import TriageResult
 from scoutbot.utils import log_block
