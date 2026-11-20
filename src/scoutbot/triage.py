@@ -62,8 +62,9 @@ def triage_ticket(
                     make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
                 )
                 continue
+            arguments = block.input  # e.g. {"customer_id": "1001"}
             try:
-                content = handler(**block.input)
+                content = handler(**arguments)  # → handler(customer_id="1001")
             except LookupError as e:
                 logger.warning("Tool error (%s): %s", block.name, e)
                 tool_result.append(make_tool_result(block.id, str(e), is_error=True))
