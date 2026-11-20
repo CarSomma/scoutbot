@@ -2,7 +2,8 @@ from anthropic import Anthropic
 import logging
 from scoutbot.config import LLMsSettings
 from scoutbot.repository import JsonCustomerRepository
-from scoutbot.tools import TOOLS, ask_human_approval, make_tool_handlers
+from scoutbot.approval import ask_human_approval
+from scoutbot.tools import TOOLS, make_tool_handlers
 from scoutbot.triage import triage_ticket
 from scoutbot.utils import load_tickets
 
