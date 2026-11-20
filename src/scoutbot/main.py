@@ -2,7 +2,7 @@ from anthropic import Anthropic
 import logging
 from scoutbot.config import LLMsSettings
 from scoutbot.repository import JsonCustomerRepository
-from scoutbot.tools import TOOLS, make_tool_handlers
+from scoutbot.tools import TOOLS, ask_human_approval, make_tool_handlers
 from scoutbot.triage import triage_ticket
 from scoutbot.utils import load_tickets
 
@@ -17,7 +17,7 @@ def main() -> None:
     llms_settings = LLMsSettings()
     client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())
     customers = JsonCustomerRepository(CUSTOMERS_PATH)
-    handlers = make_tool_handlers(customers)
+    handlers = make_tool_handlers(customers, approve=ask_human_approval)
 
     print("Loading tickets from:", TICKET_PATH)
     tickets = load_tickets(TICKET_PATH, "scoutbot")
