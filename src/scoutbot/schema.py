@@ -36,7 +36,7 @@ class EscalateInput(BaseModel):
 
 
 class Customer(BaseModel):
-    "What lookup_customer() returns: data from your database."
+    "What a customer repository's lookup() returns: data from your database."
 
     customer_id: str
     plan: Literal["free", "pro", "enterprise"]
