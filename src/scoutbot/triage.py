@@ -4,7 +4,7 @@ from typing import Callable
 from anthropic import Anthropic
 from pydantic import BaseModel
 from scoutbot.schema import TriageResult
-from scoutbot.tools import TOOL_HANDLERS, ask_human_approval, make_tool_result
+from scoutbot.tools import ToolHandlers, ask_human_approval, make_tool_result
 from scoutbot.prompts import build_prompt
 from scoutbot.utils import log_block
 
@@ -21,6 +21,7 @@ def triage_ticket(
     client: Anthropic,
     model: str,
     tools: list[dict],
+    handlers: ToolHandlers,
     customer_id: str,
     max_turns: int = 5,
     approve: Callable[[str], bool] = ask_human_approval,
@@ -28,6 +29,7 @@ def triage_ticket(
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
 
+    `handlers` maps each client tool name to the function that runs it.
     `approve` is asked before any escalate_to_human call takes effect; it gets the
     model's reason and returns True to approve, False to reject.
     """
@@ -71,7 +73,7 @@ def triage_ticket(
                 result = TriageResult.model_validate(block.input)
                 logger.info("Triage done after %d turn(s): %s", turn, result)
                 return result
-            handler = TOOL_HANDLERS.get(block.name)
+            handler = handlers.get(block.name)
             if handler is None:
                 logger.warning("Model called unknown tool: %s", block.name)
                 tool_result.append(
