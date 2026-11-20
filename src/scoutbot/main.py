@@ -1,6 +1,6 @@
-from anthropic import Anthropic
 import logging
 from scoutbot.config import LLMsSettings
+from scoutbot.llm_client import AnthropicClient
 from scoutbot.repository import JsonCustomerRepository
 from scoutbot.approval import ask_human_approval
 from scoutbot.tools import TOOLS, make_tool_handlers
@@ -16,7 +16,10 @@ def main() -> None:
     logging.getLogger("httpx2").setLevel(logging.WARNING)
 
     llms_settings = LLMsSettings()
-    client = Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value())
+    client = AnthropicClient(
+        api_key=llms_settings.anthropic_api_key.get_secret_value(),
+        model=llms_settings.anthropic_model,
+    )
     customers = JsonCustomerRepository(CUSTOMERS_PATH)
     handlers = make_tool_handlers(customers, approve=ask_human_approval)
 
@@ -28,7 +31,6 @@ def main() -> None:
         result = triage_ticket(
             ticket["text"],
             client,
-            llms_settings.anthropic_model,
             TOOLS,
             handlers,
             customer_id=ticket["customer_id"],
