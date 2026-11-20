@@ -1,5 +1,5 @@
 import logging
-from scoutbot.interfaces import LLMClient, ToolHandlers
+from scoutbot.interfaces import LLMClient, ToolHandlers, Toolset
 from scoutbot.schema import TriageResult
 
 logger = logging.getLogger(__name__)
@@ -34,20 +34,19 @@ def run_tool(block, handlers: ToolHandlers) -> dict:
 def triage_ticket(
     prompt: str,
     client: LLMClient,
-    tools: list[dict],
-    handlers: ToolHandlers,
+    toolset: Toolset,
     max_turns: int = 5,
 ) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
 
     `prompt` is the full first user message (ticket and customer ID already filled in).
-    `handlers` maps each client tool name to the function that runs it.
+    `toolset` holds the tool definitions, their handlers, and the final tool's name.
     """
     messages = [{"role": "user", "content": prompt}]
 
     for turn in range(1, max_turns + 1):
-        response = client.send(messages, tools)
+        response = client.send(messages, toolset.definitions)
         logger.info("Turn %d/%d done", turn, max_turns)
         messages.append({"role": "assistant", "content": response.content})
 
@@ -59,11 +58,11 @@ def triage_ticket(
             if block.type != "tool_use":
                 continue
             logger.info("Tool call: %s(%s)", block.name, block.input)
-            if block.name == "support_ticket_triage":
+            if block.name == toolset.final_tool_name:
                 result = TriageResult.model_validate(block.input)
                 logger.info("Triage done after %d turn(s): %s", turn, result)
                 return result
-            tool_results.append(run_tool(block, handlers))
+            tool_results.append(run_tool(block, toolset.handlers))
         if not tool_results:
             raise ValueError(
                 f"Model stopped without triaging (stop_reason={response.stop_reason})"
