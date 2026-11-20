@@ -62,6 +62,26 @@ def escalate_to_human(reason: str) -> str:
     return f"Escalation filed. Reason: {reason}"
 
 
+ESCALATION_REJECTED_MSG = (
+    "A human reviewed this escalation and rejected it. The ticket "
+    "was NOT escalated. Continue triaging it yourself."
+)
+
+
+def make_escalate_handler(approve: Callable[[str], bool]) -> Callable[..., str]:
+    """Wrap escalate_to_human in a gate: it only runs if `approve(reason)` says yes."""
+
+    def escalate(reason: str) -> str:
+        if not approve(reason):
+            # Rejection is a normal observation, not an error: the loop goes on.
+            logger.info("Escalation rejected by human")
+            return ESCALATION_REJECTED_MSG
+        logger.info("Escalation approved by human")
+        return escalate_to_human(reason)
+
+    return escalate
+
+
 # --- Human approval -----------------------------------------------------------
 
 def ask_human_approval(reason: str) -> bool:
@@ -85,14 +105,17 @@ TOOLS = [LOOKUP_CUSTOMER_TOOL, ESCALATE_TOOL, WEB_FETCH_TOOL, TRIAGE_TOOL]
 ToolHandlers = dict[str, Callable[..., object]]
 
 
-def make_tool_handlers(customers: JsonCustomerRepository) -> ToolHandlers:
+def make_tool_handlers(
+    customers: JsonCustomerRepository, approve: Callable[[str], bool]
+) -> ToolHandlers:
     """Tool name -> the Python function that runs it.
 
     The model's tool input is passed as keyword arguments: handler(**block.input).
+    `approve` is asked before any escalation takes effect.
     """
     return {
         LOOKUP_CUSTOMER_TOOL["name"]: customers.lookup,
-        ESCALATE_TOOL["name"]: escalate_to_human,
+        ESCALATE_TOOL["name"]: make_escalate_handler(approve),
     }
 
 
