@@ -1,7 +1,7 @@
 import logging
 
-from anthropic import Anthropic
 from pydantic import BaseModel
+from scoutbot.interfaces import LLMClient
 from scoutbot.schema import TriageResult
 from scoutbot.tools import ToolHandlers, make_tool_result
 from scoutbot.prompts import build_prompt
@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 def triage_ticket(
     ticket: str,
-    client: Anthropic,
-    model: str,
+    client: LLMClient,
     tools: list[dict],
     handlers: ToolHandlers,
     customer_id: str,
@@ -34,13 +33,7 @@ def triage_ticket(
     logger.info("Triaging ticket for customer %s", customer_id)
 
     for turn in range(1, max_turns + 1):
-        response = client.messages.create(
-            model=model,
-            max_tokens=1024,
-            messages=messages,
-            tools=tools,
-            tool_choice={"type": "auto"},
-        )
+        response = client.send(messages, tools)
         logger.info(
             "Turn %d/%d: stop_reason=%s, tokens in=%d out=%d",
             turn,
@@ -88,11 +81,3 @@ def triage_ticket(
 
     raise ValueError("Exceeded maximum number of turns without triaging")
 
-
-# if __name__ == "__main__":
-#     logging.basicConfig(
-#         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-#     )
-#     ticket = "I was charged twice, please refund"
-#     result = triage_ticket(ticket, client, TOOLS, customer_id="1001")
-#     print(result.model_dump_json())
