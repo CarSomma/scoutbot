@@ -3,7 +3,7 @@
 import logging
 from typing import Callable
 
-from scoutbot.interfaces import CustomerRepository, ToolHandlers
+from scoutbot.interfaces import CustomerRepository, ToolHandlers, Toolset
 from scoutbot.schema import EscalateInput, LookupCustomerInput, TriageResult
 
 logger = logging.getLogger(__name__)
@@ -109,3 +109,12 @@ def make_tool_handlers(
         LOOKUP_CUSTOMER_TOOL["name"]: make_lookup_handler(customers),
         ESCALATE_TOOL["name"]: make_escalate_handler(approve),
     }
+
+
+def make_toolset(customers: CustomerRepository, approve: Callable[[str], bool]) -> Toolset:
+    """Bundle the tool definitions, their handlers and the final tool's name."""
+    return Toolset(
+        definitions=TOOLS,
+        handlers=make_tool_handlers(customers, approve),
+        final_tool_name=TRIAGE_TOOL["name"],
+    )
