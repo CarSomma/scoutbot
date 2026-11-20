@@ -17,14 +17,14 @@ def make_tool_result(tool_use_id: str, content: str, is_error: bool = False) -> 
 def run_tool(block, handlers: ToolHandlers) -> dict:
     """Run the tool the model asked for and return the tool_result block to send back."""
     handler = handlers.get(block.name)
-    if handler is None:
+    if handler is None: # guard 1: unknown tool → leave
         logger.warning("Model called unknown tool: %s", block.name)
         return make_tool_result(block.id, f"Unknown tool: {block.name}", is_error=True)
 
     arguments = block.input  # e.g. {"customer_id": "1001"}
     try:
         content = handler(**arguments)  # → handler(customer_id="1001")
-    except LookupError as e:
+    except LookupError as e: # guard 2: tool failed → leave
         logger.warning("Tool error (%s): %s", block.name, e)
         return make_tool_result(block.id, str(e), is_error=True)
 
