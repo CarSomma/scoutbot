@@ -1,6 +1,12 @@
 """Interfaces: what the core needs, without saying who provides it."""
 
+from typing import Callable
+
 from scoutbot.schema import Customer
+
+# Tool name -> function that runs the tool. Called as handler(**tool_input);
+# returns the text sent back to the model, or raises LookupError for a tool error.
+ToolHandlers = dict[str, Callable[..., str]]
 
 
 class CustomerRepository:
