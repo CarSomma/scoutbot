@@ -80,8 +80,8 @@ TOOLS = [LOOKUP_CUSTOMER_TOOL, ESCALATE_TOOL, WEB_FETCH_TOOL, TRIAGE_TOOL]
 # Tool name -> the Python function that runs it.
 # The model's tool input is passed as keyword arguments: handler(**block.input).
 TOOL_HANDLERS: dict[str, Callable[..., object]] = {
-    "lookup_customer": lookup_customer,
-    "escalate_to_human": escalate_to_human,
+    LOOKUP_CUSTOMER_TOOL["name"]: lookup_customer,
+    ESCALATE_TOOL["name"]: escalate_to_human,
 }
 
 
