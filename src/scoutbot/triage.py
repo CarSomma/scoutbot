@@ -31,11 +31,7 @@ def run_tool(block, handlers: ToolHandlers) -> dict:
     return make_tool_result(block.id, content)
 
 
-def triage_ticket(
-    prompt: str,
-    client: LLMClient,
-    toolset: Toolset,
-    max_turns: int = 5,
+def triage_ticket(prompt: str, client: LLMClient, toolset: Toolset, max_turns: int = 5,
 ) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
