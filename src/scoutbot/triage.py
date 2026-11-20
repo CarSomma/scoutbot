@@ -62,7 +62,7 @@ def triage_ticket(
         if response.stop_reason == "pause_turn":
             continue  # API paused mid server-tool work; resend so it resumes
 
-        tool_result = []
+        tool_results = []
         for block in response.content:
             log_block(block)
             if block.type != "tool_use":
@@ -72,12 +72,12 @@ def triage_ticket(
                 result = TriageResult.model_validate(block.input)
                 logger.info("Triage done after %d turn(s): %s", turn, result)
                 return result
-            tool_result.append(run_tool(block, handlers))
-        if not tool_result:
+            tool_results.append(run_tool(block, handlers))
+        if not tool_results:
             raise ValueError(
                 f"Model stopped without triaging (stop_reason={response.stop_reason})"
             )
-        messages.append({"role": "user", "content": tool_result})
+        messages.append({"role": "user", "content": tool_results})
 
     raise ValueError("Exceeded maximum number of turns without triaging")
 
