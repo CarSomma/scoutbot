@@ -4,33 +4,25 @@ from pydantic import BaseModel
 from scoutbot.interfaces import LLMClient
 from scoutbot.schema import TriageResult
 from scoutbot.tools import ToolHandlers, make_tool_result
-from scoutbot.prompts import build_prompt
 from scoutbot.utils import log_block
 
 logger = logging.getLogger(__name__)
 
 
 def triage_ticket(
-    ticket: str,
+    prompt: str,
     client: LLMClient,
     tools: list[dict],
     handlers: ToolHandlers,
-    customer_id: str,
     max_turns: int = 5,
 ) -> TriageResult:
     """
     Triages a support ticket and returns the suggested owner, priority, and category.
 
+    `prompt` is the full first user message (ticket and customer ID already filled in).
     `handlers` maps each client tool name to the function that runs it.
     """
-    messages = [
-        {
-            "role": "user",
-            "content": build_prompt(customer_id=customer_id, ticket=ticket),
-        }
-    ]
-
-    logger.info("Triaging ticket for customer %s", customer_id)
+    messages = [{"role": "user", "content": prompt}]
 
     for turn in range(1, max_turns + 1):
         response = client.send(messages, tools)
