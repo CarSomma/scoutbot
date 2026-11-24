@@ -1,4 +1,5 @@
 import logging
+from anthropic import Anthropic
 from scoutbot.config import LLMsSettings
 from scoutbot.llm_client import AnthropicClient
 from scoutbot.prompts import build_prompt
@@ -18,7 +19,7 @@ def main() -> None:
 
     llms_settings = LLMsSettings()
     client = AnthropicClient(
-        api_key=llms_settings.anthropic_api_key.get_secret_value(),
+        sdk=Anthropic(api_key=llms_settings.anthropic_api_key.get_secret_value()),
         model=llms_settings.anthropic_model,
     )
     customers = JsonCustomerRepository(CUSTOMERS_PATH)
