@@ -3,6 +3,7 @@
 import logging
 
 from anthropic import Anthropic
+from pydantic import ConfigDict
 
 from scoutbot.interfaces import LLMClient
 
@@ -10,15 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 class AnthropicClient(LLMClient):
-    """LLMClient backed by the Anthropic Messages API."""
+    """LLMClient backed by the Anthropic Messages API.
 
-    def __init__(self, api_key: str, model: str, max_tokens: int = 1024):
-        self.client = Anthropic(api_key=api_key)
-        self.model = model
-        self.max_tokens = max_tokens
+    Inherits `model` and `max_tokens` from LLMClient and only adds the SDK client,
+    which is created outside and passed in (composition).
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # Anthropic is not a pydantic type
+
+    sdk: Anthropic
 
     def send(self, messages: list[dict], tools: list[dict]):
-        response = self.client.messages.create(
+        response = self.sdk.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
             messages=messages,
